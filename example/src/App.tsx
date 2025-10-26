@@ -24,7 +24,7 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 初始化
+  // Initialize
   const init = async () => {
     await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION!,
@@ -56,14 +56,14 @@ const App = () => {
   };
 
   const connect = async (deviceId: string) => {
-    //停止搜索
+    // Stop searching
     xBlufi.notifyStartDiscoverBle({
       isStart: false,
     });
     for (var i = 0; i < devicesList.length; i++) {
       if (deviceId === devicesList[i].deviceId) {
         const _name = devicesList[i].name;
-        console.log('点击了，蓝牙准备连接的deviceId:' + deviceId);
+        console.log('Clicked, Bluetooth preparing to connect deviceId: ' + deviceId);
         setDeviceId(deviceId);
         xBlufi.notifyConnectBle({
           isStart: true,
@@ -89,76 +89,76 @@ const App = () => {
     console.log('funListenDeviceMsgEvent', options.type, options.result);
     switch (options.type) {
       case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_LISTS:
-        console.log('获取设备列表：', options.result);
+        console.log('Get device list: ', options.result);
         if (options.result) {
           setDevicesList(options.data as any[]);
         }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CONNECTED:
-        console.log('主动连接回调：' + JSON.stringify(options));
+        console.log('Active connection callback: ' + JSON.stringify(options));
         if (options.result) {
           setName(options.data.name);
           setDeviceId(options.data.deviceId);
         } else {
           // wx.hideLoading()
           // wx.showModal({
-          //   title: '提示',
-          //   content: '连接失败',
+          //   title: 'Notification',
+          //   content: 'Connection failed',
           //   showCancel: false
           // });
         }
         break;
-      case xBlufi.XBLUFI_TYPE.TYPE_STATUS_CONNECTED: // 设备连接状态回调
-        console.log('设备连接状态回调：' + JSON.stringify(options));
+      case xBlufi.XBLUFI_TYPE.TYPE_STATUS_CONNECTED: // Device connection status callback
+        console.log('Device connection status callback: ' + JSON.stringify(options));
         // if (!options.result) {
         //   setName('');
         //   setDeviceId('');
-        //   console.log('设备连接状态回调：', '小程序与设备异常断开 ');
+        //   console.log('Device connection status callback: ', 'Mini program and device abnormally disconnected ');
         // }
         break;
-      case xBlufi.XBLUFI_TYPE.TYPE_CLOSE_CONNECTED: // 设备连接状态回调
-        console.log('主动关闭连接回调：' + JSON.stringify(options));
+      case xBlufi.XBLUFI_TYPE.TYPE_CLOSE_CONNECTED: // Device connection status callback
+        console.log('Active close connection callback: ' + JSON.stringify(options));
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_LISTS_START:
         if (!options.result) {
-          console.log('蓝牙未开启 fail =》', options);
+          console.log('Bluetooth not enabled fail =>', options);
         } else {
-          console.log('蓝牙开始搜索');
-          //蓝牙搜索开始
+          console.log('Bluetooth search started');
+          // Bluetooth search started
           setSearching(true);
         }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_LISTS_STOP:
         if (options.result) {
-          //蓝牙停止搜索ok
-          console.log('蓝牙停止搜索ok');
+          // Bluetooth stop search ok
+          console.log('Bluetooth stop search ok');
         } else {
-          //蓝牙停止搜索失败
-          console.log('蓝牙停止搜索失败');
+          // Bluetooth stop search failed
+          console.log('Bluetooth stop search failed');
         }
         setSearching(false);
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CONNECT_ROUTER_RESULT:
-        console.log('配网结果：', options.result, options.data.progress);
+        console.log('Network configuration result: ', options.result, options.data.progress);
         if (!options.result) {
-          console.log('配网结果：', '配网失败，请重试');
+          console.log('Network configuration result: ', 'Configuration failed, please retry');
         } else {
           if (options.data.progress == 100) {
             let ssid = options.data.ssid;
-            console.log('配网结果：', `连接成功路由器【${ssid}】`);
+            console.log('Network configuration result: ', `Successfully connected to router [${ssid}]`);
           }
         }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_RECIEVE_CUSTON_DATA:
-        console.log('收到设备发来的自定义数据结果：', options.data);
+        console.log('Received custom data from device: ', options.data);
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CONNECT_NEAR_ROUTER_LISTS:
-        console.log('发现网络', options.data.SSID);
+        console.log('Network discovered', options.data.SSID);
         if (options.data.SSID === '') {
           break;
         }
         setSsidList(ssidList => {
-          // 去重
+          // Remove duplicates
           for (let i = 0; i < ssidList.length; i++) {
             if (ssidList[i].SSID === options.data.SSID) {
               return ssidList;
@@ -168,17 +168,17 @@ const App = () => {
         });
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_INIT_ESP32_RESULT:
-        console.log('初始化结果：', JSON.stringify(options));
+        console.log('Initialization result: ', JSON.stringify(options));
         if (options.result) {
-          console.log('初始化成功');
+          console.log('Initialization successful');
         } else {
-          console.log('初始化失败');
+          console.log('Initialization failed');
         }
         break;
     }
   };
 
-  // 初始化esp32
+  // Initialize ESP32
   function initEsp32(): void {
     console.log('initEsp32', deviceId);
     xBlufi.notifyInitBleEsp32({
@@ -186,14 +186,14 @@ const App = () => {
     });
   }
 
-  // 扫描网络
+  // Scan networks
   function scanNetworks(): void {
     setSsidList([]);
     console.log('scanNetworks');
     xBlufi.notifySendGetNearRouterSsid();
   }
 
-  // 发送wifi配置
+  // Send WiFi configuration
   function sendWifiConfig(ssid: string, password: string): void {
     console.log('sendWifiConfig', deviceId, ssid, password);
     if (!ssid) {
@@ -231,7 +231,7 @@ const App = () => {
         alignContent: 'center',
       }}>
       <Button title="Scan Devices" onPress={search} />
-      {/* 循环显示设备列表 */}
+      {/* Loop through and display device list */}
       {devicesList.map((item, index) => {
         if (!item?.name) {
           return null;
@@ -258,7 +258,7 @@ const App = () => {
       <View style={{height: 40}} />
       <Button title="Init Esp32" onPress={initEsp32} />
       <Button title="Scan Networks" onPress={scanNetworks} />
-      {/* 循环显示ssid列表 */}
+      {/* Loop through and display SSID list */}
       {ssidList.map((item, index) => {
         if (!item?.SSID) {
           return null;
