@@ -10,7 +10,7 @@ let mDeviceEvent = null;
 let crypto = null;
 let md5 = null;
 let aesjs = null;
-const timeOut = 10; //超时时间
+const timeOut = 10; // timeout (seconds)
 var timeId = '';
 let sequenceControl = 0;
 let sequenceNumber = -1;
@@ -20,7 +20,7 @@ let self = {
     isConnected: false,
     failure: false,
     value: 0,
-    desc: '请耐心等待...',
+    desc: 'Please wait patiently...',
     isChecksum: true,
     isEncrypt: true,
     flagEnd: false,
@@ -45,7 +45,7 @@ let self = {
 };
 
 class rn {
-  // 蓝牙状态监听
+  // Bluetooth adapter state listener
   static async onBluetoothAdapterStateChange(callback) {
     return new Promise((resolve, reject) => {
       BleManager.start({ showAlert: false })
@@ -59,7 +59,7 @@ class rn {
         });
     });
   }
-  // 打开蓝牙适配器
+  // Open Bluetooth adapter
   static async openBluetoothAdapter({ success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.enableBluetooth()
@@ -73,14 +73,14 @@ class rn {
         });
     });
   }
-  // 关闭蓝牙适配器
+  // Close Bluetooth adapter
   static async closeBluetoothAdapter({ complete }) {
     return new Promise((resolve, reject) => {
       resolve();
       complete && complete();
     });
   }
-  // 获取蓝牙适配器状态
+  // Get Bluetooth adapter state
   static async getBluetoothAdapterState({ success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.checkState()
@@ -95,7 +95,7 @@ class rn {
     });
   }
 
-  // 连接监听
+  // Connection listener
   static async onBLEConnectionStateChange(callback) {
     return new Promise((resolve, reject) => {
       resolve();
@@ -103,7 +103,7 @@ class rn {
       bleManagerEmitter.addListener('BleManagerConnectPeripheral', callback);
     });
   }
-  // 连接
+  // Connect
   static async createBLEConnection({ deviceId, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.connect(deviceId)
@@ -117,7 +117,7 @@ class rn {
         });
     });
   }
-  // 设置MTU
+  // Set MTU
   static async setBLEMTU({ deviceId, mtu, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.requestMTU(deviceId, mtu)
@@ -131,7 +131,7 @@ class rn {
         });
     });
   }
-  // 断开连接
+  // Disconnect
   static async closeBLEConnection({ deviceId, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.disconnect(deviceId)
@@ -146,7 +146,7 @@ class rn {
     });
   }
 
-  // 开始搜索
+  // Start scanning
   static async startBluetoothDevicesDiscovery({ success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.scan([], timeOut, false)
@@ -162,7 +162,7 @@ class rn {
         });
     });
   }
-  // 获取蓝牙设备
+  // Get Bluetooth devices
   static async onBluetoothDeviceFound(callback) {
     return new Promise((resolve, reject) => {
       resolve();
@@ -171,7 +171,7 @@ class rn {
       console.log('BleManager onBluetoothDeviceFound ok');
     });
   }
-  // 停止搜索
+  // Stop scanning
   static async stopBluetoothDevicesDiscovery({ success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.stopScan()
@@ -185,7 +185,7 @@ class rn {
         });
     });
   }
-  // 获取蓝牙设备所有服务(service)
+  // Get all services for the Bluetooth device
   static async getBLEDeviceServices({ deviceId, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.retrieveServices(deviceId)
@@ -199,7 +199,7 @@ class rn {
         });
     });
   }
-  // 获取特征
+  // Get characteristics
   static async getBLEDeviceCharacteristics({
     deviceId,
     serviceId,
@@ -218,7 +218,7 @@ class rn {
         });
     });
   }
-  // 读特征值
+  // Read characteristic value
   static async readBLECharacteristicValue({
     deviceId,
     serviceId,
@@ -238,7 +238,7 @@ class rn {
         });
     });
   }
-  // 写特征值
+  // Write characteristic value
   static async writeBLECharacteristicValue({
     deviceId,
     serviceId,
@@ -268,7 +268,7 @@ class rn {
         });
     });
   }
-  // 通知更新特征值
+  // Enable notifications for characteristic
   static async notifyBLECharacteristicValueChange({
     deviceId,
     serviceId,
@@ -291,7 +291,7 @@ class rn {
         });
     });
   }
-  // 特征值更新
+  // Characteristic value update
   static async onBLECharacteristicValueChange(callback) {
     return new Promise((resolve, reject) => {
       bleManagerEmitter.removeAllListeners(
@@ -341,37 +341,37 @@ function getCharCodeat(str) {
   return list;
 }
 
-//判断返回的数据是否加密
+//Determine whether the returned data is encrypted
 function isEncrypt(fragNum, list, md5Key) {
   var checksum = [],
     checkData = [];
   if (fragNum[7] == '1') {
-    //返回数据加密
+    //Data returned is encrypted
     if (fragNum[6] == '1') {
       var len = list.length - 2;
       list = list.slice(0, len);
     }
     var iv = this.generateAESIV(parseInt(list[2], 16));
     if (fragNum[3] == '0') {
-      //未分包
+      //Not subcontracted
       list = list.slice(4);
       self.data.flagEnd = true;
     } else {
-      //分包
+      //Subcontracted
       list = list.slice(6);
     }
   } else {
-    //返回数据未加密
+    //Data returned is not encrypted
     if (fragNum[6] == '1') {
       var len = list.length - 2;
       list = list.slice(0, len);
     }
     if (fragNum[3] == '0') {
-      //未分包
+      //Not subcontracted
       list = list.slice(4);
       self.data.flagEnd = true;
     } else {
-      //分包
+      //Subcontracted
       list = list.slice(6);
     }
   }
@@ -851,12 +851,12 @@ function init({}) {
 
   mDeviceEvent.listenStartDiscoverBle(true, function (options) {
     if (options.isStart) {
-      //第一步检查蓝牙适配器是否可用
+      //Step 1: Check if the Bluetooth adapter is available
       rn.onBluetoothAdapterStateChange(function (res) {
         if (!res.available) {
         }
       });
-      //第二步关闭适配器，重新来搜索
+      //Step 2: Close the adapter and search again
       rn.closeBluetoothAdapter({
         complete: function (res) {
           rn.openBluetoothAdapter({
@@ -869,7 +869,7 @@ function init({}) {
                       let countsTimes = 0;
                       rn.onBluetoothDeviceFound(function (devices) {
                         console.log('onBluetoothDeviceFound', devices);
-                        //剔除重复设备，兼容不同设备API的不同返回值
+                        //Remove duplicate devices, compatible with different API return values for different devices
                         var isnotexist = true;
                         devices.deviceId = devices.id;
                         if (devices.deviceId) {
@@ -945,7 +945,7 @@ function init({}) {
                             data: res,
                           };
                           mDeviceEvent.notifyDeviceMsgEvent(obj);
-                          //开始扫码，清空列表
+                          //Start scanning, clear the list
                           devicesList.length = 0;
                         },
                         fail: function (res) {
@@ -1015,7 +1015,7 @@ function init({}) {
   });
 
   mDeviceEvent.listenConnectBle(true, function (options) {
-    //console.log("我要连接？", (options.isStart))
+    //console.log("Want to connect?", (options.isStart))
 
     if (options.isStart)
       rn.createBLEConnection({
@@ -1048,7 +1048,7 @@ function init({}) {
       rn.closeBLEConnection({
         deviceId: options.deviceId,
         success: function (res) {
-          console.log('断开成功');
+          console.log('Disconnected successfully');
           self.data.deviceId = null;
           mDeviceEvent.notifyDeviceMsgEvent({
             type: mDeviceEvent.XBLUFI_TYPE.TYPE_CLOSE_CONNECTED,
@@ -1079,7 +1079,7 @@ function init({}) {
         isConnected: false,
         failure: false,
         value: 0,
-        desc: '请耐心等待...',
+        desc: 'Please wait patiently...',
         isChecksum: true,
         isEncrypt: true,
         flagEnd: false,
@@ -1105,11 +1105,11 @@ function init({}) {
     let deviceId = options.deviceId;
     self.data.deviceId = options.deviceId;
     rn.getBLEDeviceServices({
-      // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+      // The deviceId here needs to have already established a connection with the corresponding device via createBLEConnection
       deviceId: deviceId,
       success: function (res) {
         var services = res.services;
-        console.log('获取服务成功', res, services);
+        console.log('Get services successfully', res, services);
         if (services.length > 0) {
           for (var i = 0; i < services.length; i++) {
             if (
@@ -1119,12 +1119,12 @@ function init({}) {
             ) {
               var serviceId = services[i].uuid;
               rn.getBLEDeviceCharacteristics({
-                // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+                // The deviceId here needs to have already established a connection with the corresponding device via createBLEConnection
                 deviceId: deviceId,
                 serviceId: serviceId,
                 success: function (res) {
                   var list = res.characteristics;
-                  console.log('获取特征值成功', list);
+                  console.log('Get characteristics successfully', list);
                   if (list.length > 0) {
                     for (var i = 0; i < list.length; i++) {
                       var uuid = list[i].characteristic;
@@ -1135,17 +1135,17 @@ function init({}) {
                       ) {
                         self.data.serviceId = serviceId;
                         self.data.uuid = uuid;
-                        console.log('获取notify特征值成功', uuid);
+                        console.log('Get notify characteristic successfully', uuid);
                         rn.notifyBLECharacteristicValueChange({
-                          state: true, // 启用 notify 功能
+                          state: true, // Enable notify function
                           deviceId: deviceId,
                           serviceId: serviceId,
                           characteristicId: uuid,
                           success: function () {
-                            console.log('启用notify成功');
+                            console.log('Enable notify successfully');
                             let characteristicId =
                               self.data.characteristic_write_uuid;
-                            //通知设备交互方式（是否加密） start
+                            // Notify device interaction mode (encryption) start
                             client = util.blueDH(util.DH_P, util.DH_G, crypto);
 
                             var kBytes = util.uint8ArrayToArray(
@@ -1212,7 +1212,7 @@ function init({}) {
                                 mDeviceEvent.notifyDeviceMsgEvent(obj);
                               },
                             });
-                            //通知设备交互方式（是否加密） end
+                            // Notify device interaction mode (encryption) end
                             rn.onBLECharacteristicValueChange(function (res) {
                               let list2 = util.ab2hex(res.value);
                               // start
@@ -1283,7 +1283,7 @@ function init({}) {
                                       }
 
                                       break;
-                                    case 19: //自定义数据
+                                    case 19: //Custom data
                                       let customData = [];
                                       for (var i = 0; i <= result.length; i++) {
                                         customData.push(
@@ -1328,7 +1328,7 @@ function init({}) {
                                       console.log(468);
                                       //self.setFailProcess(true, util.descFailList[4])
                                       console.log(
-                                        '入网失败 468 :',
+                                        'Failed to join the network 468 :',
                                         util.failList[4]
                                       );
                                       break;
@@ -1337,7 +1337,7 @@ function init({}) {
                                 } else {
                                   //console.log(472);
                                   console.log(
-                                    '入网失败 472:',
+                                    'Failed to join the network 472:',
                                     util.failList[4]
                                   );
                                 }
@@ -1456,7 +1456,7 @@ function getList(arr, totalLength, curLength) {
   }
 }
 
-/****************************** 对外  ***************************************/
+/****************************** Public ***************************************/
 module.exports = {
   init: init,
 };

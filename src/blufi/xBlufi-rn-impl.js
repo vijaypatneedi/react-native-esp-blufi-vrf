@@ -12,7 +12,7 @@ let client = null;
 let crypto = null;
 let md5 = null;
 let aesjs = null;
-const timeOut = 10; //超时时间
+const timeOut = 10; // timeout (seconds)
 var timeId = '';
 let sequenceControl = 0;
 let sequenceNumber = -1;
@@ -22,7 +22,7 @@ let self = {
     isConnected: false,
     failure: false,
     value: 0,
-    desc: '请耐心等待...',
+    desc: 'Please wait patiently...',
     isChecksum: false,
     isEncrypt: false,
     flagEnd: false,
@@ -47,7 +47,7 @@ let self = {
 };
 
 class rn {
-  // 蓝牙状态监听
+  // Bluetooth adapter state listener
   static async onBluetoothAdapterStateChange(callback) {
     return new Promise((resolve, reject) => {
       BleManager.start({ showAlert: false })
@@ -61,7 +61,7 @@ class rn {
         });
     });
   }
-  // 打开蓝牙适配器
+  // Open Bluetooth adapter
   static async openBluetoothAdapter({ success, fail }) {
     return new Promise((resolve, reject) => {
       if (Platform.OS === 'ios') {
@@ -80,20 +80,20 @@ class rn {
         });
     });
   }
-  // 关闭蓝牙适配器
+  // Close Bluetooth adapter
   static async closeBluetoothAdapter({ complete }) {
     return new Promise((resolve, reject) => {
       resolve();
       complete && complete();
     });
   }
-  // 获取蓝牙适配器状态
+  // Get Bluetooth adapter state
   static async getBluetoothAdapterState({ success, fail }) {
     return new Promise((resolve, reject) => {
       console.log('BleManager checkState 0');
       resolve();
       success && success();
-      // BleManager低于10版本，没有回调，需默认返回状态
+  // For BleManager versions below 10 there is no callback; return default state
       // BleManager.checkState()
       //   .then((state) => {
       //     console.log('BleManager checkState', state);
@@ -107,7 +107,7 @@ class rn {
     });
   }
 
-  // 连接监听
+  // Connection listener
   static async onBLEConnectionStateChange(callback) {
     return new Promise((resolve, reject) => {
       resolve();
@@ -115,7 +115,7 @@ class rn {
       bleManagerEmitter.addListener('BleManagerConnectPeripheral', callback);
     });
   }
-  // 连接
+  // Connect
   static async createBLEConnection({ deviceId, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.connect(deviceId)
@@ -129,7 +129,7 @@ class rn {
         });
     });
   }
-  // 设置MTU
+  // Set MTU
   static async setBLEMTU({ deviceId, mtu, success, fail }) {
     return new Promise((resolve, reject) => {
       if (Platform.OS === 'ios') {
@@ -148,7 +148,7 @@ class rn {
         });
     });
   }
-  // 断开连接
+  // Disconnect
   static async closeBLEConnection({ deviceId, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.disconnect(deviceId)
@@ -163,7 +163,7 @@ class rn {
     });
   }
 
-  // 开始搜索
+  // Start scanning
   static async startBluetoothDevicesDiscovery({
     serviceUUIDs,
     timeout,
@@ -191,7 +191,7 @@ class rn {
         });
     });
   }
-  // 获取蓝牙设备
+  // Get Bluetooth devices
   static async onBluetoothDeviceFound(callback) {
     return new Promise((resolve, reject) => {
       resolve();
@@ -200,7 +200,7 @@ class rn {
       console.log('BleManager onBluetoothDeviceFound ok');
     });
   }
-  // 停止搜索
+  // Stop scanning
   static async stopBluetoothDevicesDiscovery({ success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.stopScan()
@@ -214,7 +214,7 @@ class rn {
         });
     });
   }
-  // 获取蓝牙设备所有服务(service)
+  // Get all services for the Bluetooth device
   static async getBLEDeviceServices({ deviceId, success, fail }) {
     return new Promise((resolve, reject) => {
       BleManager.retrieveServices(deviceId)
@@ -228,7 +228,7 @@ class rn {
         });
     });
   }
-  // 获取特征
+  // Get characteristics
   static async getBLEDeviceCharacteristics({
     deviceId,
     serviceId,
@@ -247,7 +247,7 @@ class rn {
         });
     });
   }
-  // 读特征值
+  // Read characteristic value
   static async readBLECharacteristicValue({
     deviceId,
     serviceId,
@@ -267,7 +267,7 @@ class rn {
         });
     });
   }
-  // 写特征值
+  // Write characteristic value
   static async writeBLECharacteristicValue({
     deviceId,
     serviceId,
@@ -298,7 +298,7 @@ class rn {
         });
     });
   }
-  // 通知更新特征值
+  // Enable notifications for characteristic
   static async notifyBLECharacteristicValueChange({
     deviceId,
     serviceId,
@@ -321,7 +321,7 @@ class rn {
         });
     });
   }
-  // 特征值更新
+  // Characteristic value update
   static async onBLECharacteristicValueChange(callback) {
     return new Promise((resolve, reject) => {
       bleManagerEmitter.removeAllListeners(
@@ -371,37 +371,36 @@ function getCharCodeat(str) {
   return list;
 }
 
-//判断返回的数据是否加密
 function isEncrypt(fragNum, list, md5Key) {
   var checksum = [],
     checkData = [];
   if (fragNum[7] == '1') {
-    //返回数据加密
+    // returned data is encrypted
     if (fragNum[6] == '1') {
       var len = list.length - 2;
       list = list.slice(0, len);
     }
     var iv = this.generateAESIV(parseInt(list[2], 16));
     if (fragNum[3] == '0') {
-      //未分包
+      // not fragmented
       list = list.slice(4);
       self.data.flagEnd = true;
     } else {
-      //分包
+      // fragmented
       list = list.slice(6);
     }
   } else {
-    //返回数据未加密
+    // returned data is not encrypted
     if (fragNum[6] == '1') {
       var len = list.length - 2;
       list = list.slice(0, len);
     }
     if (fragNum[3] == '0') {
-      //未分包
+      // not fragmented
       list = list.slice(4);
       self.data.flagEnd = true;
     } else {
-      //分包
+      // fragmented
       list = list.slice(6);
     }
   }
@@ -697,7 +696,7 @@ function writeGetNearRouterSsid(deviceId, serviceId, characteristicId, data) {
   });
 }
 
-// 获取状态
+// Get status
 function writeSendGetState(deviceId, serviceId, characteristicId, data) {
   console.log('writeSendGetState', deviceId, serviceId, characteristicId, data);
   sequenceControl = parseInt(sequenceControl) + 1;
@@ -729,7 +728,7 @@ function writeSendGetState(deviceId, serviceId, characteristicId, data) {
   });
 }
 
-// 获取版本
+// Get version
 function writeSendGetVersion(deviceId, serviceId, characteristicId, data) {
   console.log(
     'writeSendGetVersion',
@@ -970,13 +969,13 @@ function init({}) {
 
   mDeviceEvent.listenStartDiscoverBle(true, function (options) {
     if (options.isStart) {
-      //第一步检查蓝牙适配器是否可用
+      // Step 1: check if Bluetooth adapter is available
       rn.onBluetoothAdapterStateChange(function (res) {
         console.log('onBluetoothAdapterStateChange', res);
         if (!res.available) {
         }
       });
-      //第二步关闭适配器，重新来搜索
+  // Step 2: close and re-open adapter before scanning
       rn.closeBluetoothAdapter({
         complete: function (res) {
           console.log('closeBluetoothAdapter', res);
@@ -993,7 +992,7 @@ function init({}) {
                       let countsTimes = 0;
                       rn.onBluetoothDeviceFound(function (devices) {
                         console.log('onBluetoothDeviceFound', devices);
-                        //剔除重复设备，兼容不同设备API的不同返回值
+                        // Filter duplicate devices; support different API return formats
                         var isnotexist = true;
                         devices.deviceId = devices.id;
                         if (devices.deviceId) {
@@ -1072,7 +1071,7 @@ function init({}) {
                             data: res,
                           };
                           mDeviceEvent.notifyDeviceMsgEvent(obj);
-                          //开始扫码，清空列表
+                          //Start scanning, clear list
                           devicesList.length = 0;
                         },
                         fail: function (res) {
@@ -1142,7 +1141,7 @@ function init({}) {
   });
 
   mDeviceEvent.listenConnectBle(true, function (options) {
-    //console.log("我要连接？", (options.isStart))
+    //console.log("Am I connecting?", (options.isStart))
 
     if (options.isStart)
       rn.createBLEConnection({
@@ -1175,7 +1174,7 @@ function init({}) {
       rn.closeBLEConnection({
         deviceId: options.deviceId,
         success: function (res) {
-          console.log('断开成功');
+          console.log('Disconnected successfully');
           self.data.deviceId = null;
           mDeviceEvent.notifyDeviceMsgEvent({
             type: mDeviceEvent.XBLUFI_TYPE.TYPE_CLOSE_CONNECTED,
@@ -1206,7 +1205,7 @@ function init({}) {
         isConnected: false,
         failure: false,
         value: 0,
-        desc: '请耐心等待...',
+        desc: 'Please wait patiently...',
         isChecksum: true,
         isEncrypt: true,
         flagEnd: false,
@@ -1232,11 +1231,11 @@ function init({}) {
     let deviceId = options.deviceId;
     self.data.deviceId = options.deviceId;
     rn.getBLEDeviceServices({
-      // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+      // The deviceId here needs to have already established a connection with the corresponding device through createBLEConnection
       deviceId: deviceId,
       success: function (res) {
         var services = res.services;
-        console.log('获取服务成功', res, services);
+        console.log('Successfully retrieved services', res, services);
         if (services.length > 0) {
           for (var i = 0; i < services.length; i++) {
             if (
@@ -1246,7 +1245,7 @@ function init({}) {
             ) {
               var serviceId = services[i].uuid;
               var list = res.characteristics;
-              console.log('获取特征值成功', list);
+              console.log('Successfully retrieved characteristics', list);
               if (list.length > 0) {
                 for (var i = 0; i < list.length; i++) {
                   var uuid = list[i].characteristic;
@@ -1257,17 +1256,17 @@ function init({}) {
                   ) {
                     self.data.serviceId = serviceId;
                     self.data.uuid = uuid;
-                    console.log('获取notify特征值成功', uuid);
+                    console.log('Successfully retrieved notify characteristic', uuid);
                     rn.notifyBLECharacteristicValueChange({
-                      state: true, // 启用 notify 功能
+                      state: true, // Enable notify function
                       deviceId: deviceId,
                       serviceId: serviceId,
                       characteristicId: uuid,
                       success: function () {
-                        console.log('启用notify成功');
+                        console.log('Notify enabled successfully');
                         let characteristicId =
                           self.data.characteristic_write_uuid;
-                        //通知设备交互方式（是否加密） start
+                        // Notify device interaction mode (encryption) start
                         client = util.blueDH(util.DH_P, util.DH_G, crypto);
 
                         var kBytes = util.uint8ArrayToArray(
@@ -1334,7 +1333,7 @@ function init({}) {
                             mDeviceEvent.notifyDeviceMsgEvent(obj);
                           },
                         });
-                        //通知设备交互方式（是否加密） end
+                        // Notify device interaction mode (encryption) end
                         rn.onBLECharacteristicValueChange(function (res) {
                           let list2 = util.ab2hex(res.value);
                           // start
@@ -1373,17 +1372,17 @@ function init({}) {
                             if (type == 1) {
                               let what = [];
                               switch (subType) {
-                                case 15: // 0xf (b’001111) wifi联网状态 通知手机 ESP32 的 Wi-Fi 状态， 包括 STA状态和 SoftAP 状态 (但收到手机询问 Wi-Fi 状态时， 除了回复此帧外，还可回复其他数据帧。)
+                                case 15: // 0xf (b’001111) Wi-Fi connection status: Notifies the phone of the ESP32's Wi-Fi status, including STA and SoftAP status (When the phone queries the Wi-Fi status, other data frames can be replied in addition to this frame.)
                                   let scene = '';
                                   if (
                                     result.length == 3 ||
                                     result.length == 6
                                   ) {
-                                    // 其他连接数据
-                                    scene = 'get'; // 获取配置
+                                    // Other connection data
+                                    scene = 'get'; // Get configuration
                                   } else {
-                                    scene = 'set'; // 设置配置
-                                    // 连接结果
+                                    scene = 'set'; // Set configuration
+                                    // Connection result
                                     for (var i = 0; i <= result.length; i++) {
                                       var num = parseInt(result[i], 16) + '';
                                       if (i > 12)
@@ -1395,7 +1394,7 @@ function init({}) {
                                     }
                                   }
                                   if (result?.[1] == '00') {
-                                    // wifi连接成功
+                                    // wifi connection successful
                                     mDeviceEvent.notifyDeviceMsgEvent({
                                       type: mDeviceEvent.XBLUFI_TYPE
                                         .TYPE_CONNECT_ROUTER_RESULT,
@@ -1406,11 +1405,11 @@ function init({}) {
                                         ssid: what.join(''),
                                         code1: result?.[1],
                                         success: true,
-                                        msg: 'wifi连接成功',
+                                        msg: 'wifi connection successful',
                                       },
                                     });
                                   } else {
-                                    // wifi连接失败
+                                    // wifi connection failed
                                     mDeviceEvent.notifyDeviceMsgEvent({
                                       type: mDeviceEvent.XBLUFI_TYPE
                                         .TYPE_CONNECT_ROUTER_RESULT,
@@ -1421,12 +1420,12 @@ function init({}) {
                                         ssid: what.join(''),
                                         code1: result?.[1],
                                         success: false,
-                                        msg: 'wifi连接失败',
+                                        msg: 'wifi connection failed',
                                       },
                                     });
                                   }
                                   break;
-                                case 19: // 0x13 (b’010011) 用户发送或者接收自定义数据。
+                                case 19: // 0x13 (b’010011) User sends or receives custom data.
                                   let customData = [];
                                   for (var i = 0; i <= result.length; i++) {
                                     customData.push(
@@ -1444,7 +1443,7 @@ function init({}) {
                                   mDeviceEvent.notifyDeviceMsgEvent(obj);
 
                                   break;
-                                case util.SUBTYPE_NEGOTIATION_NEG: // 0x0 (b’000000) 用来发送协商数据，传输到应用层注册的回调函数。
+                                case util.SUBTYPE_NEGOTIATION_NEG: // 0x0 (b’000000) Used to send negotiation data, transmitted to the callback function registered at the application layer.
                                   var arr = util.hexByInt(result.join(''));
                                   var clientSecret = client.computeSecret(
                                     new Uint8Array(arr)
@@ -1467,7 +1466,7 @@ function init({}) {
                                     },
                                   });
                                   break;
-                                // case 15: // 0xf (b’001111) wifi联网状态 通知手机 ESP32 的 Wi-Fi 状态， 包括 STA状态和 SoftAP 状态 (但收到手机询问 Wi-Fi 状态时， 除了回复此帧外，还可回复其他数据帧。)
+                                // case 15: // 0xf (b'001111) wifi connection status - Notifies the phone of ESP32's Wi-Fi status, including STA status and SoftAP status (when receiving a phone inquiry about Wi-Fi status, in addition to replying with this frame, other data frames can also be replied.)
                                 //   let scustomData = [];
                                 //   for (var i = 0; i <= result.length; i++) {
                                 //     scustomData.push(
@@ -1476,7 +1475,7 @@ function init({}) {
                                 //       )
                                 //     );
                                 //   }
-                                //   console.log('入网成功 15x2 :', scustomData.join(''));
+                                //   console.log('Network connection successful 15x2 :', scustomData.join(''));
                                 //   mDeviceEvent.notifyDeviceMsgEvent({
                                 //     type: mDeviceEvent.XBLUFI_TYPE
                                 //       .TYPE_GET_DEVICE_STATE,
@@ -1484,7 +1483,7 @@ function init({}) {
                                 //     data: scustomData.join(''),
                                 //   });
                                 //   break;
-                                case 16: // 0x10 b’010000 版本
+                                case 16: // 0x10 b’010000 Version
                                   let xcustomData = [];
                                   for (var i = 0; i <= result.length; i++) {
                                     xcustomData.push(
@@ -1500,10 +1499,10 @@ function init({}) {
                                     data: xcustomData.join(''),
                                   });
                                   break;
-                                case 17: // 0x11 (b’010001) 通知手机 ESP32 周围的 Wi-Fi 热点列表。
+                                case 17: // 0x11 (b’010001) Notifies the phone of the list of Wi-Fi hotspots around the ESP32.
                                   getList(result, result.length, 0);
                                   break;
-                                case 18: // 0x12 (b’010010) 通知手机 BluFi 过程出现异常错误。
+                                case 18: // 0x12 (b’010010) Notifies the phone that an exception has occurred in the BluFi process.
                                   console.log(
                                     'Report error. 18 :',
                                     util.failList[parseInt(result?.[0])]
@@ -1544,7 +1543,7 @@ function init({}) {
                             } else {
                               //console.log(472);
                               console.log(
-                                '入网失败 472:',
+                                'Connection failed 472:',
                                 util.failList[parseInt(result?.[0])]
                               );
                               console.log(
@@ -1622,7 +1621,7 @@ function init({}) {
     );
   });
 
-  // 监听获取版本
+  // Listen for get version
   mDeviceEvent.listenSendGetVersion(true, function (options) {
     console.log('getVersion: ', options);
     writeSendGetVersion(
@@ -1632,7 +1631,7 @@ function init({}) {
       null
     );
   });
-  // 监听获取状态
+  // Listen for get state
   mDeviceEvent.listenSendGetState(true, function (options) {
     console.log('getState: ', options);
     writeSendGetState(
@@ -1675,7 +1674,7 @@ function getList(arr, totalLength, curLength) {
   }
 }
 
-/****************************** 对外  ***************************************/
+/****************************** Public API ***************************************/
 module.exports = {
   init: init,
 };

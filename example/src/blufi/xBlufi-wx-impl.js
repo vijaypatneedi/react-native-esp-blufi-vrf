@@ -5,7 +5,7 @@ let mDeviceEvent = null;
 let crypto = null;
 let md5 = null;
 let aesjs = null;
-const timeOut = 20; //超时时间
+const timeOut = 20; // timeout (seconds)
 var timeId = '';
 let sequenceControl = 0;
 let sequenceNumber = -1;
@@ -15,7 +15,7 @@ let self = {
     isConnected: false,
     failure: false,
     value: 0,
-    desc: '请耐心等待...',
+    desc: 'Please wait patiently...',
     isChecksum: true,
     isEncrypt: true,
     flagEnd: false,
@@ -71,37 +71,37 @@ function getCharCodeat(str) {
   return list;
 }
 
-//判断返回的数据是否加密
+// Determine whether returned data is encrypted
 function isEncrypt(fragNum, list, md5Key) {
   var checksum = [],
     checkData = [];
   if (fragNum[7] == '1') {
-    //返回数据加密
+    // Return data encrypted
     if (fragNum[6] == '1') {
       var len = list.length - 2;
       list = list.slice(0, len);
     }
     var iv = this.generateAESIV(parseInt(list[2], 16));
     if (fragNum[3] == '0') {
-      //未分包
+      // Not fragmented
       list = list.slice(4);
       self.data.flagEnd = true;
     } else {
-      //分包
+      // Fragmented
       list = list.slice(6);
     }
   } else {
-    //返回数据未加密
+    // Return data not encrypted
     if (fragNum[6] == '1') {
       var len = list.length - 2;
       list = list.slice(0, len);
     }
     if (fragNum[3] == '0') {
-      //未分包
+      // Not fragmented
       list = list.slice(4);
       self.data.flagEnd = true;
     } else {
-      //分包
+      // Fragmented
       list = list.slice(6);
     }
   }
@@ -551,12 +551,12 @@ function init() {
 
   mDeviceEvent.listenStartDiscoverBle(true, function (options) {
     if (options.isStart) {
-      //第一步检查蓝牙适配器是否可用
+  // Step 1: check if Bluetooth adapter is available
       wx.onBluetoothAdapterStateChange(function (res) {
         if (!res.available) {
         }
       });
-      //第二步关闭适配器，重新来搜索
+  // Step 2: close and re-open adapter before scanning
       wx.closeBluetoothAdapter({
         complete: function (res) {
           wx.openBluetoothAdapter({
@@ -568,7 +568,7 @@ function init() {
                       let devicesList = [];
                       let countsTimes = 0;
                       wx.onBluetoothDeviceFound(function (devices) {
-                        //剔除重复设备，兼容不同设备API的不同返回值
+                        // Filter duplicate devices; support different API return formats
                         var isnotexist = true;
                         if (devices.deviceId) {
                           if (devices.advertisData) {
@@ -642,7 +642,7 @@ function init() {
                             data: res,
                           };
                           mDeviceEvent.notifyDeviceMsgEvent(obj);
-                          //开始扫码，清空列表
+                          // Start scanning, clear list
                           devicesList.length = 0;
                         },
                         fail: function (res) {
@@ -712,7 +712,7 @@ function init() {
   });
 
   mDeviceEvent.listenConnectBle(true, function (options) {
-    //console.log("我要连接？", (options.isStart))
+    //console.log("Should I connect?", (options.isStart))
 
     if (options.isStart)
       wx.createBLEConnection({
@@ -745,7 +745,7 @@ function init() {
       wx.closeBLEConnection({
         deviceId: options.deviceId,
         success: function (res) {
-          console.log('断开成功');
+          console.log('Disconnected successfully');
           self.data.deviceId = null;
           mDeviceEvent.notifyDeviceMsgEvent({
             type: mDeviceEvent.XBLUFI_TYPE.TYPE_CLOSE_CONNECTED,
@@ -776,7 +776,7 @@ function init() {
         isConnected: false,
         failure: false,
         value: 0,
-        desc: '请耐心等待...',
+        desc: 'Please wait patiently...',
         isChecksum: true,
         isEncrypt: true,
         flagEnd: false,
@@ -802,7 +802,7 @@ function init() {
     let deviceId = options.deviceId;
     self.data.deviceId = options.deviceId;
     wx.getBLEDeviceServices({
-      // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+      // The deviceId here needs to have already established a connection with the corresponding device via createBLEConnection
       deviceId: deviceId,
       success: function (res) {
         var services = res.services;
@@ -811,7 +811,7 @@ function init() {
             if (services[i].uuid === self.data.service_uuid) {
               var serviceId = services[i].uuid;
               wx.getBLEDeviceCharacteristics({
-                // 这里的 deviceId 需要已经通过 createBLEConnection 与对应设备建立链接
+                // The deviceId here needs to have already established a connection with the corresponding device via createBLEConnection
                 deviceId: deviceId,
                 serviceId: serviceId,
                 success: function (res) {
@@ -823,14 +823,14 @@ function init() {
                         self.data.serviceId = serviceId;
                         self.data.uuid = uuid;
                         wx.notifyBLECharacteristicValueChange({
-                          state: true, // 启用 notify 功能
+                          state: true, // Enable notify function
                           deviceId: deviceId,
                           serviceId: serviceId,
                           characteristicId: list[1].uuid,
                           success: function (res) {
                             let characteristicId =
                               self.data.characteristic_write_uuid;
-                            //通知设备交互方式（是否加密） start
+                            // Notify device interaction mode (encryption) start
                             client = util.blueDH(util.DH_P, util.DH_G, crypto);
                             var kBytes = util.uint8ArrayToArray(
                               client.getPublicKey()
@@ -888,7 +888,7 @@ function init() {
                                 mDeviceEvent.notifyDeviceMsgEvent(obj);
                               },
                             });
-                            //通知设备交互方式（是否加密） end
+                            // Notify device interaction mode (encryption) end
                             wx.onBLECharacteristicValueChange(function (res) {
                               let list2 = util.ab2hex(res.value);
                               // start
@@ -959,7 +959,7 @@ function init() {
                                       }
 
                                       break;
-                                    case 19: //自定义数据
+                                    case 19: // Custom data
                                       let customData = [];
                                       for (var i = 0; i <= result.length; i++) {
                                         customData.push(
@@ -1004,7 +1004,7 @@ function init() {
                                       console.log(468);
                                       //self.setFailProcess(true, util.descFailList[4])
                                       console.log(
-                                        '入网失败 468 :',
+                                        'Network connection failed 468 :',
                                         util.failList[4]
                                       );
                                       break;
@@ -1013,7 +1013,7 @@ function init() {
                                 } else {
                                   //console.log(472);
                                   console.log(
-                                    '入网失败 472:',
+                                    'Network connection failed 472:',
                                     util.failList[4]
                                   );
                                 }
@@ -1126,7 +1126,7 @@ function getList(arr, totalLength, curLength) {
   }
 }
 
-/****************************** 对外  ***************************************/
+/****************************** Public API  ***************************************/
 module.exports = {
   init: init,
 };

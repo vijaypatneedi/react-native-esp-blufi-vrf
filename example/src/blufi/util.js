@@ -54,21 +54,21 @@ const descFailListEN = [
 ];
 
 const descSucList = [
-  '蓝牙连接...',
-  '蓝牙连接成功',
-  '设备信息已成功获取',
-  '属性信息已成功获取',
-  '发送配置信息...',
-  '成功发送配置信息',
-  '成功连接',
+  'Bluetooth connecting...',
+  'Bluetooth connection successful',
+  'Device information is successfully obtained',
+  'Attribute information is successfully obtained',
+  'Send configuration information...',
+  'Configuration information sent successfully',
+  'Connection successfully',
 ];
 const descFailList = [
-  '蓝牙连接失败',
-  '设备信息获取失败',
-  '属性信息获取失败',
-  '配置信息发送失败',
-  '网络配置失败',
-  '蓝牙异常断开',
+  'Bluetooth connection failed',
+  'Device information acquisition failed',
+  'Attribute information acquisition failed',
+  'Configuration information sent failed',
+  'Distribution network failed',
+  'Bluetooth abnormally disconnected',
 ];
 const successList = {
   0: 'NULL',
@@ -119,14 +119,14 @@ var CRC_TB = [
   0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
 ];
 
-//转16进制
+//Convert to hexadecimal
 const ab2hex = (buffer) => {
   var hexArr = Array.prototype.map.call(new Uint8Array(buffer), function (bit) {
     return ('00' + bit.toString(16)).slice(-2);
   });
   return hexArr;
 };
-//16进制转字符串
+//Convert hexadecimal to string
 const hexCharCodeToStr = (hexCharCodeStr) => {
   var trimedStr = hexCharCodeStr.trim();
   var rawStr =
@@ -146,7 +146,7 @@ const hexCharCodeToStr = (hexCharCodeStr) => {
   }
   return resultStr.join('');
 };
-//过滤名称
+//Filter device name
 const filterDevice = (devices, filterName) => {
   var self = this,
     list = [];
@@ -159,11 +159,11 @@ const filterDevice = (devices, filterName) => {
   }
   return list;
 };
-//获去type
+//Get type
 const getType = (pkgType, subType) => {
   return (subType << 2) | pkgType;
 };
-//unit8Arry转数组
+//Convert Uint8Array to array
 const uint8ArrayToArray = (uint8Array) => {
   var array = [];
 
@@ -173,7 +173,7 @@ const uint8ArrayToArray = (uint8Array) => {
 
   return array;
 };
-//16进制转二进制数组
+//Convert hexadecimal to binary array
 const hexToBinArray = (str) => {
   var dec = parseInt(str, 16),
     bin = dec.toString(2),
@@ -188,7 +188,7 @@ const hexToBinArray = (str) => {
   }
   return bin.split('');
 };
-//16进制转数组
+//Convert hexadecimal to array
 const hexByArray = (str) => {
   var arr = [];
   if (str.length % 2 != 0) {
@@ -199,7 +199,7 @@ const hexByArray = (str) => {
   }
   return arr;
 };
-//16进制转整形数组
+//Convert hexadecimal to integer array
 const hexByInt = (str) => {
   var arr = [];
   if (str.length % 2 != 0) {
@@ -210,9 +210,9 @@ const hexByInt = (str) => {
   }
   return arr;
 };
-//排序
+//Sort
 const sortBy = (attr, rev) => {
-  //第二个参数没有传递 默认升序排列
+  //If the second parameter is not passed, default ascending sort
   if (rev == undefined) {
     rev = 1;
   } else {
@@ -229,7 +229,7 @@ const sortBy = (attr, rev) => {
     return 0;
   };
 };
-//判断非空
+//Check if not empty
 const _isEmpty = (str) => {
   if (
     str === '' ||
@@ -244,7 +244,7 @@ const _isEmpty = (str) => {
   }
 };
 
-//组装数据格式
+//Assemble data format
 const writeData = (type, subType, frameCtl, seq, len, data) => {
   var value = [],
     type = getType(type, subType);
@@ -257,7 +257,7 @@ const writeData = (type, subType, frameCtl, seq, len, data) => {
   }
   return value;
 };
-//是否分包
+//Whether to split packets
 const isSubcontractor = (data, checksum, sequence, encrypt) => {
   var len = 0,
     lenData = [],
@@ -304,7 +304,7 @@ const assemblyChecksum = (list, len, sequence, encrypt) => {
   list.push(checksumByte2);
   return list;
 };
-//加密发送的数据
+//Encrypt data to send
 const encrypt = (aesjs, md5Key, sequence, data, checksum) => {
   var iv = generateAESIV(sequence),
     sumArr = [],
@@ -322,31 +322,31 @@ const encrypt = (aesjs, md5Key, sequence, data, checksum) => {
   return encryptData.concat(sumArr);
 };
 
-//DH加密
+//DH encryption
 const blueDH = (p, g, crypto) => {
   var client = crypto.createDiffieHellman(p, 'hex', g, 'hex');
   var clientKey = client.generateKeys();
   //var clientSecret = client.computeSecret(server.getPublicKey());
   return client;
 };
-//md5加密
+//MD5 encryption
 const blueMd5 = (md5, key) => {
   var arr = md5.array(key);
   return arr;
 };
-// aes加密
+// AES encryption
 const blueAesEncrypt = (aesjs, mdKey, iv, bytes) => {
   var aesOfb = new aesjs.ModeOfOperation.ofb(mdKey, iv);
   var encryptedBytes = aesOfb.encrypt(bytes);
   return encryptedBytes;
 };
-//aes解密
+//AES decryption
 const blueAesDecrypt = (aesjs, mdKey, iv, bytes) => {
   var aesOfb = new aesjs.ModeOfOperation.ofb(mdKey, iv);
   var decryptedBytes = aesOfb.decrypt(bytes);
   return decryptedBytes;
 };
-//获取Frame Control
+//Get Frame Control
 const getFrameCTRLValue = (
   encrypted,
   checksum,
@@ -372,7 +372,7 @@ const getFrameCTRLValue = (
   }
   return frame;
 };
-//获取aes iv
+//Get AES IV
 const generateAESIV = (sequence) => {
   var result = [];
   for (var i = 0; i < 16; i++) {
@@ -384,7 +384,7 @@ const generateAESIV = (sequence) => {
   }
   return result;
 };
-//计算CRC值
+//Calculate CRC value
 const caluCRC = (crc, pByte) => {
   crc = ~crc & 0xffff;
   for (var i in pByte) {

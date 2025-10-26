@@ -1,34 +1,34 @@
-# @kafudev/react-native-esp-blufi 库使用手册
+# @kafudev/react-native-esp-blufi Library User Manual
 
-## 安装
+## Installation
 
-使用 npm 或 yarn 安装库：
+Install the library using npm or yarn:
 
 ```shell
 npm install @kafudev/react-native-esp-blufi
 ```
 
-或者
+Or
 
 ```shell
 yarn add @kafudev/react-native-esp-blufi
 ```
 
-此外，该库依赖于另一个名为 `react-native-ble-manager` 的库来提供蓝牙功能。请使用以下命令安装它：
+In addition, this library depends on another library called `react-native-ble-manager` to provide Bluetooth functionality. Please install it using the following command:
 
 ```shell
 npm install react-native-ble-manager
 ```
 
-或者
+Or
 
 ```shell
 yarn add react-native-ble-manager
 ```
 
-## 使用方法
+## Usage
 
-从 `react` 和 `react-native` 导入必要的组件，以及导入库本身：
+Import the necessary components from `react` and `react-native`, as well as the library itself:
 
 ```jsx
 import React, { useEffect, useState } from 'react';
@@ -36,16 +36,16 @@ import { View, Button, Text, ScrollView, TextInput } from 'react-native';
 import xBlufi from '@kafudev/react-native-esp-blufi';
 ```
 
-创建一个函数式组件来实现你的应用：
+Create a functional component to implement your application:
 
 ```jsx
 const App = () => {
-  // 在这里定义你的状态变量
+  // Define your state variables here
   const [devicesList, setDevicesList] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   // ...
 
-  // 使用 useEffect 钩子来初始化库并监听设备消息
+  // Use the useEffect hook to initialize the library and listen for device messages
   useEffect(() => {
     xBlufi.initXBlufi(2);
     console.log('xBlufi', xBlufi.XMQTT_SYSTEM);
@@ -56,7 +56,7 @@ const App = () => {
     };
   }, []);
 
-  // 在这里定义事件处理函数
+  // Define event handler functions here
   const search = async () => {
     // ...
   };
@@ -77,17 +77,17 @@ const App = () => {
     // ...
   };
 
-  // 在这里定义其他应用逻辑的函数
+  // Define other application logic functions here
   function initEsp32(): void {
     // ...
   }
 
-  // 获取版本
+  // Get version
   function getVersion(): void {
     // ...
   }
 
-  // 获取状态
+  // Get state
   function getState(): void {
     // ...
   }
@@ -108,10 +108,10 @@ const App = () => {
     // ...
   }
 
-  // 渲染UI组件并绑定事件处理函数
+  // Render UI components and bind event handlers
   return (
     <ScrollView style={{ flex: 1, padding: 10, alignContent: 'center' }}>
-      {/* 在这里编写 UI 组件和事件处理函数 */}
+      {/* Write your UI components and event handlers here */}
     </ScrollView>
   );
 };
@@ -119,36 +119,36 @@ const App = () => {
 export default App;
 ```
 
-注意：请替换上述代码中的注释部分为你自己的逻辑和 UI 组件。
+Note: Please replace the commented sections in the above code with your own logic and UI components.
 
-要完全了解每个函数的目的和使用方法，请参考提供的代码示例中的内联注释。
+To fully understand the purpose and usage of each function, please refer to the inline comments in the provided code examples.
 
 ## API
 
-以下是 @kafudev/react-native-esp-blufi 库的可用 API：
+The following are the available APIs for the @kafudev/react-native-esp-blufi library:
 
-| 方法名                                 | 描述                                        |
-| -------------------------------------- | ------------------------------------------- |
-| `initXBlufi(num: number)`              | 初始化 xBlufi，参数为数字类型,0=ReactNative |
-| `listenDeviceMsgEvent(...)`            | 监听设备消息事件                            |
-| `notifyStartDiscoverBle(...)`          | 通知开始或停止蓝牙设备搜索                  |
-| `notifyConnectBle(...)`                | 通知连接或断开蓝牙设备                      |
-| `notifyInitBleEsp32(...)`              | 通知初始化蓝牙设备 ESP32                    |
-| `notifySendGetNearRouterSsid(...)`     | 通知发送获取附近路由器 SSID 的命令          |
-| `notifySendRouterSsidAndPassword(...)` | 通知发送 WiFi 配置（SSID 和密码）           |
-| `notifySendCustomData(...)`            | 通知发送自定义数据到设备                    |
+| Method Name                            | Description                                                      |
+| -------------------------------------- | ---------------------------------------------------------------- |
+| `initXBlufi(num: number)`              | Initialize xBlufi, parameter is a number, 0=ReactNative         |
+| `listenDeviceMsgEvent(...)`            | Listen for device message events                                 |
+| `notifyStartDiscoverBle(...)`          | Notify to start or stop Bluetooth device discovery               |
+| `notifyConnectBle(...)`                | Notify to connect or disconnect Bluetooth device                 |
+| `notifyInitBleEsp32(...)`              | Notify to initialize Bluetooth device ESP32                      |
+| `notifySendGetNearRouterSsid(...)`     | Notify to send command to get nearby router SSID                 |
+| `notifySendRouterSsidAndPassword(...)` | Notify to send WiFi configuration (SSID and password)            |
+| `notifySendCustomData(...)`            | Notify to send custom data to device                             |
 
-请根据需要参考库的文档，使用适当的 API 来实现你的应用需求。
+Please refer to the library's documentation as needed and use the appropriate APIs to implement your application requirements.
 
 
-## 注意事项
+## Notes
 
-请注意，在使用任何蓝牙功能之前，您需要调用 `BleManager.start()` 来初始化 `react-native-ble-manager`。
+Please note that before using any Bluetooth functionality, you need to call `BleManager.start()` to initialize `react-native-ble-manager`.
 
-感谢提供的信息！以下是基于 `https://github.com/xuhongv/BlufiEsp32WeChat` 开源项目的 @kafudev/react-native-esp-blufi 库的使用说明。
+Thank you for the information! The following are the usage instructions for the @kafudev/react-native-esp-blufi library based on the `https://github.com/xuhongv/BlufiEsp32WeChat` open source project.
 
-## 致谢
+## Acknowledgments
 
-特别致谢 `https://github.com/xuhongv/BlufiEsp32WeChat` 提供的开源项目，为 @kafudev/react-native-esp-blufi 库提供了灵感和参考。
+Special thanks to the `https://github.com/xuhongv/BlufiEsp32WeChat` open source project, which provided inspiration and reference for the @kafudev/react-native-esp-blufi library.
 
-在编写您自己的应用程序时，可以借鉴 `https://github.com/xuhongv/BlufiEsp32WeChat` 的相关逻辑和功能，并根据需要进行修改和调整。
+When writing your own application, you can refer to the related logic and functionality of `https://github.com/xuhongv/BlufiEsp32WeChat` and modify and adjust as needed.

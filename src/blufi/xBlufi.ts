@@ -3,7 +3,7 @@ import { factory } from './other/onfire';
 
 let mOnFire: any = null;
 
-// 0=ReactNative  1表示微信小程序 2表示阿里支付宝小程序
+// 0=ReactNative  1=WeChat Mini Program 2=Alipay Mini Program
 const XMQTT_SYSTEM = {
   ReactNative: 0,
   WeChat: 1,
@@ -11,36 +11,36 @@ const XMQTT_SYSTEM = {
 };
 
 const XBLUFI_TYPE = {
-  TYPE_STATUS_CONNECTED: '-2', /// 设备连接状态回调
-  TYPE_CLOSE_CONNECTED: '-1', ///主动关闭连接
-  TYPE_CONNECTED: '0', //主动连接
-  TYPE_GET_DEVICE_LISTS: '1', //发现设备列表回调
+  TYPE_STATUS_CONNECTED: '-2', /// Device connection status callback
+  TYPE_CLOSE_CONNECTED: '-1', /// Actively close connection
+  TYPE_CONNECTED: '0', // Actively connect
+  TYPE_GET_DEVICE_LISTS: '1', // Discover device list callback
   TYPE_INIT_ESP32_RESULT: '2',
-  TYPE_RECIEVE_CUSTON_DATA: '3', //接收到自定义数据
+  TYPE_RECIEVE_CUSTON_DATA: '3', // Received custom data
   TYPE_CONNECT_ROUTER_RESULT: '4',
   TYPE_CONNECT_NEAR_ROUTER_LISTS: '5',
-  TYPE_CONNECT_ROUTER_SEND_END: '8', // 发送wifi数据结束
-  TYPE_GET_DEVICE_LISTS_START: ' 41', //发现设备列表回调开始
-  TYPE_GET_DEVICE_LISTS_STOP: '42', //停止发现设备列表回调
-  TYPE_GET_DEVICE_VERSION: '45', //获取设备版本
-  TYPE_GET_DEVICE_STATE: '46', //获取设备状态
+  TYPE_CONNECT_ROUTER_SEND_END: '8', // WiFi data transmission ended
+  TYPE_GET_DEVICE_LISTS_START: ' 41', // Discover device list callback started
+  TYPE_GET_DEVICE_LISTS_STOP: '42', // Stop discovering device list callback
+  TYPE_GET_DEVICE_VERSION: '45', // Get device version
+  TYPE_GET_DEVICE_STATE: '46', // Get device state
 };
 
 const OnFireEvent = {
-  EVENT_START_DISCONORY: '0', //蓝牙状态事件 发现设备
-  EVENT_CONNECT_DISCONNECT: '1', //通知连接或断开蓝牙
-  EVENT_NOFITY_INIT_ESP32: '3', //通知获取蓝牙设备的服务uuid列表等初始化工作
+  EVENT_START_DISCONORY: '0', // Bluetooth status event - discover devices
+  EVENT_CONNECT_DISCONNECT: '1', // Notify connect or disconnect Bluetooth
+  EVENT_NOFITY_INIT_ESP32: '3', // Notify to get Bluetooth device service UUID list and initialization
   ENENT_ALL: '6',
-  EVENT_NOFITY_SEND_ROUTER_SSID_PASSWORD: '50', //通知发送路由器的ssid和password
-  EVENT_NOFITY_SEND_CUSTON_DATA: '51', //通知发送自定义数据
-  EVENT_NOFITY_SEND_GET_ROUTER_SSID: '52', //获取周围的SSID
-  EVENT_NOFITY_SEND_GET_STATE: '60', //获取wifi状态
-  EVENT_NOFITY_SEND_GET_VERSION: '80', //获取版本
+  EVENT_NOFITY_SEND_ROUTER_SSID_PASSWORD: '50', // Notify to send router SSID and password
+  EVENT_NOFITY_SEND_CUSTON_DATA: '51', // Notify to send custom data
+  EVENT_NOFITY_SEND_GET_ROUTER_SSID: '52', // Get nearby SSIDs
+  EVENT_NOFITY_SEND_GET_STATE: '60', // Get WiFi status
+  EVENT_NOFITY_SEND_GET_VERSION: '80', // Get version
 };
 
 /**
- * 初始化
- * @param type 参考 XMQTT_SYSTEM
+ * Initialize
+ * @param type Reference XMQTT_SYSTEM
  */
 function initXBlufi(type: number = 0, options: any): void {
   mOnFire = factory();
@@ -71,16 +71,16 @@ function listenDeviceMsgEvent(isSetListener: boolean, funtion: Function): void {
 }
 
 /**
- * 开始或停止发现附近的蓝牙设备
- * @param options 连接参数 {"isStart":true , "filter":"名字过滤"} :是否开始发现设备
+ * Start or stop discovering nearby Bluetooth devices
+ * @param options Connection parameters {"isStart":true , "filter":"name filter"} : Whether to start discovering devices
  */
 function notifyStartDiscoverBle(options: any): void {
   mOnFire.fire(OnFireEvent.EVENT_START_DISCONORY, options);
 }
 
 /**
- * 开始或停止发现附近的蓝牙设备
- * @param options 连接参数 {"isStart":true} 是否开始发现设备
+ * Start or stop discovering nearby Bluetooth devices
+ * @param options Connection parameters {"isStart":true} Whether to start discovering devices
  */
 function listenStartDiscoverBle(
   isSetListener: boolean,
@@ -94,18 +94,18 @@ function listenStartDiscoverBle(
 }
 
 /**
- * 连接或断开 蓝牙连接
+ * Connect or disconnect Bluetooth connection
  *
- * @param options 连接参数 {"connect":true,"deviceID":"设备id，蓝牙发现列表获取"}
+ * @param options Connection parameters {"connect":true,"deviceID":"device id, obtained from Bluetooth discovery list"}
  */
 function notifyConnectBle(options: any): void {
-  console.log('notifyConnectBle 蓝牙准备连接的deviceId --------------');
+  console.log('notifyConnectBle deviceId preparing to connect --------------');
   mOnFire.fire(OnFireEvent.EVENT_CONNECT_DISCONNECT, options);
 }
 
 /**
- * 开始或停止连接的蓝牙设备
- * @param options 连接参数 {"isStart":true} 是否开始发现设备
+ * Start or stop connecting to Bluetooth device
+ * @param options Connection parameters {"isStart":true} Whether to start discovering devices
  */
 function listenConnectBle(isSetListener: boolean, funtion: Function): void {
   if (isSetListener) {
@@ -116,16 +116,16 @@ function listenConnectBle(isSetListener: boolean, funtion: Function): void {
 }
 
 /**
- * 通知初始化获取设备的服务列表等信息
- * @param options 连接参数 {"deviceId":"设备的设备id"}
+ * Notify initialization to get device service list and other information
+ * @param options Connection parameters {"deviceId":"device's device id"}
  */
 function notifyInitBleEsp32(options: any): void {
   mOnFire.fire(OnFireEvent.EVENT_NOFITY_INIT_ESP32, options);
 }
 
 /**
- * 通知初始化获取设备的服务列表等信息
- * @param options 连接参数 {"isStart":true} 是否开始发现设备
+ * Notify initialization to get device service list and other information
+ * @param options Connection parameters {"isStart":true} Whether to start discovering devices
  */
 function listenInitBleEsp32(isSetListener: boolean, funtion: Function): void {
   if (isSetListener) {
@@ -136,13 +136,13 @@ function listenInitBleEsp32(isSetListener: boolean, funtion: Function): void {
 }
 
 /**
- * 发送获取版本通知
+ * Send get version notification
  */
 function notifySendGetVersion(): void {
   mOnFire.fire(OnFireEvent.EVENT_NOFITY_SEND_GET_VERSION);
 }
-/** 发送获取版本监听
- * @param isSetListener 是否设置监听
+/** Send get version listener
+ * @param isSetListener Whether to set listener
  */
 function listenSendGetVersion(isSetListener: boolean, funtion: Function): void {
   if (isSetListener) {
@@ -153,13 +153,13 @@ function listenSendGetVersion(isSetListener: boolean, funtion: Function): void {
 }
 
 /**
- * 发送获取ssid状态通知
+ * Send get SSID status notification
  */
 function notifySendGetState(): void {
   mOnFire.fire(OnFireEvent.EVENT_NOFITY_SEND_GET_STATE);
 }
-/** 发送获取ssid状态监听
- * @param isSetListener 是否设置监听
+/** Send get SSID status listener
+ * @param isSetListener Whether to set listener
  */
 function listenSendGetState(isSetListener: boolean, funtion: Function): void {
   if (isSetListener) {
@@ -170,13 +170,13 @@ function listenSendGetState(isSetListener: boolean, funtion: Function): void {
 }
 
 /**
- * 发送获取附近路由器SSID列表的通知
+ * Send notification to get nearby router SSID list
  */
 function notifySendGetNearRouterSsid(): void {
   mOnFire.fire(OnFireEvent.EVENT_NOFITY_SEND_GET_ROUTER_SSID);
 }
-/** 发送获取附近路由器SSID列表的监听
- * @param isSetListener 是否设置监听
+/** Send listener to get nearby router SSID list
+ * @param isSetListener Whether to set listener
  */
 function listenSendGetNearRouterSsid(
   isSetListener: boolean,
@@ -190,14 +190,14 @@ function listenSendGetNearRouterSsid(
 }
 
 /**
- * 发送路由器SSID和密码的通知
- * @param options 连接参数 {"ssid":"xxx","password":"xxx"}
+ * Send notification with router SSID and password
+ * @param options Connection parameters {"ssid":"xxx","password":"xxx"}
  */
 function notifySendRouterSsidAndPassword(options: any): void {
   mOnFire.fire(OnFireEvent.EVENT_NOFITY_SEND_ROUTER_SSID_PASSWORD, options);
 }
 /**
- * 发送路由器SSID和密码的监听
+ * Listener for sending router SSID and password
  */
 function listenSendRouterSsidAndPassword(
   isSetListener: boolean,
@@ -211,14 +211,14 @@ function listenSendRouterSsidAndPassword(
 }
 
 /**
- * 发送自定义数据的通知
- * @param options 自定义数据
+ * Send notification with custom data
+ * @param options Custom data
  */
 function notifySendCustomData(options: any): void {
   mOnFire.fire(OnFireEvent.EVENT_NOFITY_SEND_CUSTON_DATA, options);
 }
 /**
- * 发送自定义数据的监听
+ * Listener for sending custom data
  */
 function listenSendCustomData(isSetListener: boolean, funtion: Function): void {
   if (isSetListener) {
