@@ -163,7 +163,7 @@ class rn {
     });
   }
 
-  // 开始搜索
+    // 开始搜索附近设备
   static async startBluetoothDevicesDiscovery({
     serviceUUIDs,
     timeout,
@@ -173,22 +173,32 @@ class rn {
     fail,
   }) {
     return new Promise((resolve, reject) => {
-      BleManager.scan(
-        [...serviceUUIDs],
-        timeout || timeOut,
-        allowDuplicatesKey,
-        options
-      )
-        .then(() => {
-          console.log('BleManager scan ok');
-          resolve();
-          success && success();
-        })
-        .catch((error) => {
-          console.log('BleManager scan', error);
-          reject(error);
-          fail && fail(error);
-        });
+      // On iOS, wait a bit for Bluetooth to be fully powered on
+      const startScan = () => {
+        BleManager.scan(
+          [...serviceUUIDs],
+          timeout || timeOut,
+          allowDuplicatesKey,
+          options
+        )
+          .then(() => {
+            console.log('BleManager scan ok');
+            resolve();
+            success && success();
+          })
+          .catch((error) => {
+            console.log('BleManager scan', error);
+            reject(error);
+            fail && fail(error);
+          });
+      };
+
+      if (Platform.OS === 'ios') {
+        // Wait 500ms for iOS Bluetooth to be fully ready
+        setTimeout(startScan, 500);
+      } else {
+        startScan();
+      }
     });
   }
   // 获取蓝牙设备

@@ -6,6 +6,9 @@ import {
   ScrollView,
   TextInput,
   PermissionsAndroid,
+  Alert,
+  Platform,
+  Linking,
 } from 'react-native';
 // import xBlufi from '@kafudev/react-native-esp-blufi';
 import xBlufi from '../../src/blufi/xBlufi';
@@ -18,6 +21,8 @@ const App = () => {
   const [ssidList, setSsidList] = useState<any[]>([]);
   const [ssid, setSsid] = useState('abc');
   const [password, setPassword] = useState('12345678');
+  const [deviceInfo, setDeviceInfo] = useState<{Name?: string; SN?: string; version?: string; wifiBand?: string}>({});
+  const [bluetoothReady, setBluetoothReady] = useState(false);
 
   useEffect(() => {
     init();
@@ -26,29 +31,67 @@ const App = () => {
 
   // 初始化
   const init = async () => {
-    await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION!,
-    );
-    await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN!,
-    );
-    await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT!,
-    );
+    console.log('Initializing app on platform:', Platform.OS);
+
+    // Request permissions only on Android
+    if (Platform.OS === 'android') {
+      try {
+        const locationGranted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION!,
+        );
+        const scanGranted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN!,
+        );
+        const connectGranted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT!,
+        );
+        console.log('Android permissions:', {locationGranted, scanGranted, connectGranted});
+      } catch (err) {
+        console.warn('Permission error:', err);
+      }
+    } else if (Platform.OS === 'ios') {
+      console.log('iOS: Permissions are handled in Info.plist');
+      console.log('Please ensure Location Services are enabled in Settings > Privacy > Location Services');
+      console.log('And Bluetooth permission is granted in Settings > [App Name] > Location');
+    }
+    // iOS permissions are handled in Info.plist
+
     xBlufi.initXBlufi(0, {});
     console.log('xBlufi', xBlufi.XMQTT_SYSTEM);
     xBlufi.listenDeviceMsgEvent(true, funListenDeviceMsgEvent);
+
+    // On iOS, wait a bit for Bluetooth to fully initialize
+    if (Platform.OS === 'ios') {
+      setTimeout(() => {
+        console.log('iOS: Bluetooth should be ready now');
+        setBluetoothReady(true);
+      }, 1000);
+    } else {
+      setBluetoothReady(true);
+    }
+
     return () => {
       xBlufi.listenDeviceMsgEvent(false, funListenDeviceMsgEvent);
     };
   };
 
   const search = async () => {
+    console.log('Search button clicked, Platform:', Platform.OS);
+    console.log('Current searching state:', searching);
+    console.log('Bluetooth ready:', bluetoothReady);
+
+    if (!bluetoothReady && Platform.OS === 'ios') {
+      Alert.alert('Please Wait', 'Bluetooth is still initializing. Please wait a moment and try again.');
+      return;
+    }
+
     if (searching) {
+      console.log('Stopping scan...');
       xBlufi.notifyStartDiscoverBle({
         isStart: false,
       });
     } else {
+      console.log('Starting scan...');
       xBlufi.notifyStartDiscoverBle({
         isStart: true,
       });
@@ -90,8 +133,10 @@ const App = () => {
     switch (options.type) {
       case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_LISTS:
         console.log('获取设备列表：', options.result);
+        console.log('设备数量：', options.data?.length || 0);
         if (options.result) {
           setDevicesList(options.data as any[]);
+          console.log('设备列表已更新，设备数：', options.data?.length);
         }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CONNECTED:
@@ -151,6 +196,37 @@ const App = () => {
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_RECIEVE_CUSTON_DATA:
         console.log('收到设备发来的自定义数据结果：', options.data);
+        console.log('Received custom data from device: ', options.data);
+        // Try to parse as JSON to extract Name and SN
+        try {
+          if (options.data) {
+            // Clean the string - remove trailing null characters and whitespace
+            const cleanData = options.data.replace(/\u0000+$/, '').trim();
+            console.log('Cleaned data:', cleanData);
+
+            const responseData = JSON.parse(cleanData);
+            if (responseData.Name || responseData.SN) {
+              console.log('=== Wi-Fi Gateway Info ===');
+              console.log('Name:', responseData.Name || name);
+              console.log('Serial Number (SN):', responseData.SN || deviceId);
+              console.log('WiFi Band:', responseData.WiFiBand || '2.4GHz');
+              console.log('Full Response:', JSON.stringify(responseData, null, 2));
+
+              setDeviceInfo(prev => ({
+                ...prev,
+                Name: responseData.Name || name,
+                SN: responseData.SN || deviceId,
+                wifiBand: responseData.WiFiBand || '2.4GHz',
+              }));
+              // You can now send this to your API
+              // sendToAPI(responseData.Name, responseData.SN);
+            }
+          }
+        } catch (e) {
+          // If not JSON, just log the raw data
+          console.error('Failed to parse custom data:', e);
+          console.log('Raw data:', options.data);
+        }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CONNECT_NEAR_ROUTER_LISTS:
         console.log('发现网络', options.data.SSID);
@@ -174,6 +250,11 @@ const App = () => {
         } else {
           console.log('初始化失败');
         }
+        break;
+      case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_VERSION:
+        console.log('=== Device Version Info ===');
+        console.log('Version:', options.data);
+        setDeviceInfo(prev => ({...prev, version: options.data}));
         break;
     }
   };
@@ -212,34 +293,121 @@ const App = () => {
   function provCustom(): void {
     xBlufi.notifySendCustomData({
       deviceId: deviceId,
-      data: 'hello',
+      customData: 'hello',
     });
   }
 
   function provCustomWithByteData(): void {
     xBlufi.notifySendCustomData({
       deviceId: deviceId,
-      data: [0x01, 0x02, 0x03].toString(),
+      customData: [0x01, 0x02, 0x03].toString(),
     });
   }
 
+  // Get device version
+  function getDeviceVersion(): void {
+    console.log('Getting device version...');
+    xBlufi.notifySendGetVersion();
+  }
+
+  // Request device info (Name and SN) from device
+  // Note: Your ESP32 firmware needs to be programmed to send this info
+  function requestDeviceInfo(): void {
+    console.log('Requesting device info (Name and SN)...');
+    // Send the command that matches your production firmware
+    const dataToSend = '{"Cmd": "get wifi inf"}';
+    xBlufi.notifySendCustomData({
+      deviceId: deviceId,
+      customData: dataToSend,  // Use customData instead of data
+    });
+  }
+
+  // Function to send device info to your API
+  async function sendDeviceInfoToAPI(): Promise<void> {
+    if (!deviceInfo.Name || !deviceInfo.SN) {
+      console.log('Device info not available yet. Name:', deviceInfo.Name, 'SN:', deviceInfo.SN);
+      Alert.alert('Error', 'Please get device info first');
+      return;
+    }
+
+    console.log('=== Sending to API ===');
+    console.log('Name:', deviceInfo.Name);
+    console.log('SN:', deviceInfo.SN);
+
+    try {
+      // Example API call - replace with your actual API endpoint
+      // const response = await fetch('https://your-api.com/device/check', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //   },
+      //   body: JSON.stringify({
+      //     Name: deviceInfo.Name,
+      //     SN: deviceInfo.SN,
+      //   }),
+      // });
+      // const result = await response.json();
+      // console.log('API Response:', result);
+
+      Alert.alert(
+        'Device Info',
+        `Ready to send:\nName: ${deviceInfo.Name}\nSN: ${deviceInfo.SN}`
+      );
+    } catch (error) {
+      console.error('Error sending to API:', error);
+    }
+  }
+
+  // Helper function to open iOS settings
+  function openSettings(): void {
+    if (Platform.OS === 'ios') {
+      Alert.alert(
+        'iOS Permissions Required',
+        'For Bluetooth scanning to work on iOS, you need to:\n\n1. Enable Location Services\n2. Grant Location permission to this app\n3. Grant Bluetooth permission\n\nOpen Settings now?',
+        [
+          {text: 'Cancel', style: 'cancel'},
+          {text: 'Open Settings', onPress: () => Linking.openSettings()}
+        ]
+      );
+    } else {
+      Alert.alert('Info', 'This is only needed for iOS devices');
+    }
+  }
+
   return (
-    <ScrollView
+      <ScrollView
       style={{
         flex: 1,
         padding: 10,
         alignContent: 'center',
       }}>
+      {Platform.OS === 'ios' && (
+        <View style={{marginBottom: 10, padding: 10, backgroundColor: '#fff3cd', borderRadius: 8}}>
+          <Text style={{color: '#856404', marginBottom: 8}}>
+            iOS Bluetooth requires Location permission
+          </Text>
+          <Button
+            title="Open Settings"
+            onPress={openSettings}
+            color="#856404"
+          />
+        </View>
+      )}
       <Button title="Scan Devices" onPress={search} />
-      {/* 循环显示设备列表 */}
+      {/* Loop through and display device list */}
       {devicesList.map((item, index) => {
-        if (!item?.name) {
-          return null;
-        }
+        // Show devices even without names, display MAC address instead
+        const displayName = item?.name || `Device ${item?.deviceId || 'Unknown'}`;
         return (
-          <View key={item?.deviceId + index}>
-            <Text style={{color: 'black', textAlign: 'left'}}>
-              Device name: {item?.name}
+          <View key={item?.deviceId + index} style={{marginVertical: 8, padding: 10, backgroundColor: '#f5f5f5', borderRadius: 8}}>
+            <Text style={{color: 'black', fontWeight: 'bold'}}>
+              {displayName}
+            </Text>
+            <Text style={{color: '#666', fontSize: 12}}>
+              MAC: {item?.deviceId}
+            </Text>
+            <Text style={{color: '#666', fontSize: 12}}>
+              RSSI: {item?.rssi || 'N/A'}
             </Text>
             <Button title="Connect" onPress={() => connect(item?.deviceId)} />
           </View>
@@ -259,6 +427,43 @@ const App = () => {
       <Button title="Init Esp32" onPress={initEsp32} />
       <Button title="Scan Networks" onPress={scanNetworks} />
       {/* 循环显示ssid列表 */}
+      <View style={{height: 20}} />
+
+      {/* Device Info Section */}
+      <View style={{backgroundColor: '#f0f0f0', padding: 10, marginVertical: 10}}>
+        <Text style={{color: 'black', fontWeight: 'bold', fontSize: 16, marginBottom: 10}}>
+          Device Information:
+        </Text>
+        {deviceInfo.Name && (
+          <Text style={{color: 'black'}}>Name: {deviceInfo.Name}</Text>
+        )}
+        {deviceInfo.SN && (
+          <Text style={{color: 'black'}}>Serial Number: {deviceInfo.SN}</Text>
+        )}
+        {deviceInfo.wifiBand && (
+          <Text style={{color: 'black'}}>WiFi Band: {deviceInfo.wifiBand}</Text>
+        )}
+        {deviceInfo.version && (
+          <Text style={{color: 'black'}}>Version: {deviceInfo.version}</Text>
+        )}
+        {!deviceInfo.Name && !deviceInfo.SN && !deviceInfo.version && !deviceInfo.wifiBand && (
+          <Text style={{color: 'gray', fontStyle: 'italic'}}>
+            No device info available yet
+          </Text>
+        )}
+      </View>
+
+      <Button title="Get Device Version" onPress={getDeviceVersion} />
+      <Button title="Request Device Info (Name & SN)" onPress={requestDeviceInfo} />
+      <Button
+        title="Send Device Info to API"
+        onPress={sendDeviceInfoToAPI}
+        disabled={!deviceInfo.Name || !deviceInfo.SN}
+      />
+      <View style={{height: 20}} />
+
+      {/* SSID List */}
+      {/* Loop through and display SSID list */}
       {ssidList.map((item, index) => {
         if (!item?.SSID) {
           return null;
