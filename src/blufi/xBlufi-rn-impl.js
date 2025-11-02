@@ -1257,6 +1257,11 @@ function init({}) {
               var serviceId = services[i].uuid;
               var list = res.characteristics;
               console.log('获取特征值成功', list);
+
+              // Find both notify and write characteristics
+              let notifyCharacteristic = null;
+              let writeCharacteristic = null;
+
               if (list.length > 0) {
                 for (var i = 0; i < list.length; i++) {
                   var uuid = list[i].characteristic;
@@ -1265,18 +1270,33 @@ function init({}) {
                       .toLowerCase()
                       .indexOf(uuid.toLowerCase()) != -1
                   ) {
-                    self.data.serviceId = serviceId;
-                    self.data.uuid = uuid;
+                    notifyCharacteristic = uuid;
                     console.log('获取notify特征值成功', uuid);
+                  }
+                  if (
+                    self.data.characteristic_write_uuid
+                      .toLowerCase()
+                      .indexOf(uuid.toLowerCase()) != -1
+                  ) {
+                    writeCharacteristic = uuid;
+                    console.log('获取write特征值成功', uuid);
+                  }
+                }
+
+                // Only proceed if both characteristics are found
+                if (notifyCharacteristic && writeCharacteristic) {
+                    self.data.serviceId = serviceId;
+                    self.data.uuid = notifyCharacteristic;
+                    self.data.characteristic_write_uuid = writeCharacteristic;
+
                     rn.notifyBLECharacteristicValueChange({
                       state: true, // 启用 notify 功能
                       deviceId: deviceId,
                       serviceId: serviceId,
-                      characteristicId: uuid,
+                      characteristicId: notifyCharacteristic,
                       success: function () {
                         console.log('启用notify成功');
-                        let characteristicId =
-                          self.data.characteristic_write_uuid;
+                        let characteristicId = writeCharacteristic;
                         //通知设备交互方式（是否加密） start
                         client = util.blueDH(util.DH_P, util.DH_G, crypto);
 
@@ -1579,7 +1599,14 @@ function init({}) {
                         mDeviceEvent.notifyDeviceMsgEvent(obj);
                       },
                     });
-                  }
+                } else {
+                  console.log('未找到write或notify特征值');
+                  let obj = {
+                    type: mDeviceEvent.XBLUFI_TYPE.TYPE_INIT_ESP32_RESULT,
+                    result: false,
+                    data: 'Write or Notify characteristic not found',
+                  };
+                  mDeviceEvent.notifyDeviceMsgEvent(obj);
                 }
               }
               break;
@@ -1605,7 +1632,7 @@ function init({}) {
     console.log('sendRouterSsid: ', options.ssid, options.password);
     writeDeviceRouterInfoStart(
       self.data.deviceId,
-      self.data.service_uuid,
+      self.data.serviceId,
       self.data.characteristic_write_uuid,
       null
     );
@@ -1616,7 +1643,7 @@ function init({}) {
     console.log('customData: ', options.customData);
     writeCutomsData(
       self.data.deviceId,
-      self.data.service_uuid,
+      self.data.serviceId,
       self.data.characteristic_write_uuid,
       null
     );
@@ -1626,7 +1653,7 @@ function init({}) {
     console.log('getNearRouterSsid: ', options);
     writeGetNearRouterSsid(
       self.data.deviceId,
-      self.data.service_uuid,
+      self.data.serviceId,
       self.data.characteristic_write_uuid,
       null
     );
@@ -1637,7 +1664,7 @@ function init({}) {
     console.log('getVersion: ', options);
     writeSendGetVersion(
       self.data.deviceId,
-      self.data.service_uuid,
+      self.data.serviceId,
       self.data.characteristic_write_uuid,
       null
     );
@@ -1647,7 +1674,7 @@ function init({}) {
     console.log('getState: ', options);
     writeSendGetState(
       self.data.deviceId,
-      self.data.service_uuid,
+      self.data.serviceId,
       self.data.characteristic_write_uuid,
       null
     );
