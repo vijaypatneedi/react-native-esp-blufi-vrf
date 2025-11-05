@@ -624,12 +624,14 @@ function writeCutomsData(deviceId, serviceId, characteristicId, data) {
 
 function writeGetNearRouterSsid(deviceId, serviceId, characteristicId, data) {
   console.log(
-    'writeGetNearRouterSsid',
+    'WORKING_REPO: writeGetNearRouterSsid START',
     deviceId,
     serviceId,
     characteristicId,
     data
   );
+  console.log('WORKING_REPO: Current notify characteristic UUID:', self.data.characteristic_notify_uuid);
+
   sequenceControl = parseInt(sequenceControl) + 1;
   var frameControl = util.getFrameCTRLValue(
     self.data.isEncrypt,
@@ -647,14 +649,19 @@ function writeGetNearRouterSsid(deviceId, serviceId, characteristicId, data) {
     null
   );
   var typedArray = new Uint8Array(value);
+  console.log('WORKING_REPO: About to write network scan command, value:', Array.from(typedArray));
+
   rn.writeBLECharacteristicValue({
     deviceId: deviceId,
     serviceId: serviceId,
     characteristicId: characteristicId,
     value: Array.from(typedArray),
-    success: function () {},
+    success: function () {
+      console.log('WORKING_REPO: Network scan command SENT successfully, now waiting for BLE notifications...');
+      console.log('WORKING_REPO: Expected response on characteristic:', self.data.characteristic_notify_uuid);
+    },
     fail: function (error) {
-      console.log('writeGetNearRouterSsid', error);
+      console.log('WORKING_REPO: writeGetNearRouterSsid FAILED:', error);
     },
   });
 }
@@ -1214,34 +1221,55 @@ function init({}) {
                             });
                             // Notify device interaction mode (encryption) end
                             rn.onBLECharacteristicValueChange(function (res) {
+                              console.log('WORKING_REPO: *** BLE CHARACTERISTIC VALUE CHANGED ***');
+                              console.log('WORKING_REPO: Raw BLE data received:', res);
+                              console.log('WORKING_REPO: Characteristic ID:', res.characteristic);
+                              console.log('WORKING_REPO: Service ID:', res.service);
+                              console.log('WORKING_REPO: Device ID:', res.peripheral);
+
                               let list2 = util.ab2hex(res.value);
+                              console.log('WORKING_REPO: Converted hex data:', list2);
+
                               // start
                               let result = self.data.result;
                               if (list2.length < 4) {
+                                console.log('WORKING_REPO: Data too short, length:', list2.length);
                                 console.log(407);
                                 return false;
                               }
                               var val = parseInt(list2[0], 16),
                                 type = val & 3,
                                 subType = val >> 2;
+                              console.log('WORKING_REPO: Parsed - val:', val, 'type:', type, 'subType:', subType);
+
                               var dataLength = parseInt(list2[3], 16);
+                              console.log('WORKING_REPO: Data length:', dataLength);
+
                               if (dataLength == 0) {
+                                console.log('WORKING_REPO: Zero data length, returning');
                                 return false;
                               }
                               var fragNum = util.hexToBinArray(list2[1]);
+                              console.log('WORKING_REPO: Fragment number:', fragNum);
+
                               list2 = isEncrypt(
                                 fragNum,
                                 list2,
                                 self.data.md5Key
                               );
+                              console.log('WORKING_REPO: After encryption processing:', list2);
+
                               result = result.concat(list2);
                               self.data.result = result;
+                              console.log('WORKING_REPO: Accumulated result:', result);
+                              console.log('WORKING_REPO: Flag end status:', self.data.flagEnd);
+
                               if (self.data.flagEnd) {
                                 self.data.flagEnd = false;
                                 if (type == 1) {
                                   let what = [];
                                   console.log(
-                                    'recieve data subType: ',
+                                    'WORKING_REPO: *** PROCESSING COMPLETE MESSAGE - subType: ***',
                                     subType
                                   );
                                   switch (subType) {
@@ -1321,6 +1349,10 @@ function init({}) {
                                       break;
 
                                     case 17:
+                                      console.log('WORKING_REPO: *** NETWORK SCAN RESPONSE RECEIVED ***');
+                                      console.log('WORKING_REPO: Network scan result data:', result);
+                                      console.log('WORKING_REPO: Result length:', result.length);
+                                      console.log('WORKING_REPO: About to call getList...');
                                       getList(result, result.length, 0);
                                       break;
 
@@ -1426,11 +1458,16 @@ function init({}) {
 }
 
 function getList(arr, totalLength, curLength) {
-  // console.log(totalLength)
-  // console.log(arr)
+  console.log('WORKING_REPO: *** getList called ***');
+  console.log('WORKING_REPO: Input array:', arr);
+  console.log('WORKING_REPO: Total length:', totalLength);
+  console.log('WORKING_REPO: Current length:', curLength);
+
   var self = this;
   if (arr.length > 0) {
     var len = parseInt(arr[0], 16);
+    console.log('WORKING_REPO: Network entry length:', len);
+
     curLength += 1 + len;
     if (len > 0 && curLength < totalLength) {
       var rssi = 0,
@@ -1439,20 +1476,32 @@ function getList(arr, totalLength, curLength) {
       for (var i = 1; i <= len; i++) {
         if (i == 1) {
           rssi = parseInt(arr[i], 16);
+          console.log('WORKING_REPO: Network RSSI:', rssi);
         } else {
           list.push(parseInt(arr[i], 16));
         }
       }
       name = decodeURIComponent(escape(String.fromCharCode(...list)));
+      console.log('WORKING_REPO: *** FOUND NETWORK ***');
+      console.log('WORKING_REPO: Network name:', name);
+      console.log('WORKING_REPO: Network RSSI:', rssi);
+
       let obj = {
         type: mDeviceEvent.XBLUFI_TYPE.TYPE_CONNECT_NEAR_ROUTER_LISTS,
         result: true,
         data: { rssi: rssi, SSID: name },
       };
+      console.log('WORKING_REPO: Notifying network found event:', obj);
       mDeviceEvent.notifyDeviceMsgEvent(obj);
+
       arr = arr.splice(len + 1);
+      console.log('WORKING_REPO: Remaining array after processing:', arr);
       getList(arr, totalLength, curLength);
+    } else {
+      console.log('WORKING_REPO: Reached end of network list or invalid length');
     }
+  } else {
+    console.log('WORKING_REPO: Empty array, network parsing complete');
   }
 }
 

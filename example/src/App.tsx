@@ -18,6 +18,7 @@ const App = () => {
   const [ssidList, setSsidList] = useState<any[]>([]);
   const [ssid, setSsid] = useState('abc');
   const [password, setPassword] = useState('12345678');
+  const [showOnlyRLC, setShowOnlyRLC] = useState(true);
 
   useEffect(() => {
     init();
@@ -63,7 +64,9 @@ const App = () => {
     for (var i = 0; i < devicesList.length; i++) {
       if (deviceId === devicesList[i].deviceId) {
         const _name = devicesList[i].name;
-        console.log('Clicked, Bluetooth preparing to connect deviceId: ' + deviceId);
+        console.log(
+          'Clicked, Bluetooth preparing to connect deviceId: ' + deviceId,
+        );
         setDeviceId(deviceId);
         xBlufi.notifyConnectBle({
           isStart: true,
@@ -86,7 +89,12 @@ const App = () => {
     result: any;
     data: any;
   }) => {
-    console.log('funListenDeviceMsgEvent', options.type, options.result);
+    console.log(
+      'WORKING: funListenDeviceMsgEvent',
+      options.type,
+      options.result,
+    );
+    console.log('WORKING: Full event data:', JSON.stringify(options));
     switch (options.type) {
       case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_LISTS:
         console.log('Get device list: ', options.result);
@@ -109,7 +117,9 @@ const App = () => {
         }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_STATUS_CONNECTED: // Device connection status callback
-        console.log('Device connection status callback: ' + JSON.stringify(options));
+        console.log(
+          'Device connection status callback: ' + JSON.stringify(options),
+        );
         // if (!options.result) {
         //   setName('');
         //   setDeviceId('');
@@ -117,7 +127,9 @@ const App = () => {
         // }
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CLOSE_CONNECTED: // Device connection status callback
-        console.log('Active close connection callback: ' + JSON.stringify(options));
+        console.log(
+          'Active close connection callback: ' + JSON.stringify(options),
+        );
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_GET_DEVICE_LISTS_START:
         if (!options.result) {
@@ -139,13 +151,23 @@ const App = () => {
         setSearching(false);
         break;
       case xBlufi.XBLUFI_TYPE.TYPE_CONNECT_ROUTER_RESULT:
-        console.log('Network configuration result: ', options.result, options.data.progress);
+        console.log(
+          'Network configuration result: ',
+          options.result,
+          options.data.progress,
+        );
         if (!options.result) {
-          console.log('Network configuration result: ', 'Configuration failed, please retry');
+          console.log(
+            'Network configuration result: ',
+            'Configuration failed, please retry',
+          );
         } else {
           if (options.data.progress == 100) {
             let ssid = options.data.ssid;
-            console.log('Network configuration result: ', `Successfully connected to router [${ssid}]`);
+            console.log(
+              'Network configuration result: ',
+              `Successfully connected to router [${ssid}]`,
+            );
           }
         }
         break;
@@ -189,25 +211,63 @@ const App = () => {
   // Scan networks
   function scanNetworks(): void {
     setSsidList([]);
-    console.log('scanNetworks');
-    xBlufi.notifySendGetNearRouterSsid();
+    console.log('WORKING: scanNetworks called');
+    console.log(
+      'WORKING: xBlufi.notifySendGetNearRouterSsid:',
+      typeof xBlufi.notifySendGetNearRouterSsid,
+    );
+
+    if (typeof xBlufi.notifySendGetNearRouterSsid === 'function') {
+      console.log('WORKING: Calling notifySendGetNearRouterSsid...');
+      xBlufi.notifySendGetNearRouterSsid();
+      console.log('WORKING: notifySendGetNearRouterSsid called successfully');
+    } else {
+      console.error(
+        'WORKING: notifySendGetNearRouterSsid is not a function:',
+        xBlufi.notifySendGetNearRouterSsid,
+      );
+    }
   }
 
   // Send WiFi configuration
   function sendWifiConfig(ssid: string, password: string): void {
-    console.log('sendWifiConfig', deviceId, ssid, password);
-    if (!ssid) {
-      return;
-    }
-    if (!password) {
-      return;
-    }
+    console.log('Sending WiFi config:', ssid, password);
     xBlufi.notifySendRouterSsidAndPassword({
-      deviceId: deviceId,
       ssid: ssid,
       password: password,
     });
   }
+
+  // Filter devices to show only RLC devices if enabled
+  const getFilteredDevices = () => {
+    if (!showOnlyRLC) {
+      return devicesList;
+    }
+
+    return devicesList.filter(device => {
+      if (!device?.name) {
+        return false;
+      }
+
+      // Check if device name contains "RLC"
+      const nameContainsRLC = device.name.toLowerCase().includes('rlc');
+
+      // Check if device ID/MAC contains RLC patterns (starts with certain MAC prefixes)
+      const hasRLCMacPattern =
+        device.deviceId &&
+        (device.deviceId.toLowerCase().startsWith('90:38:0c') || // Common RLC MAC prefix
+          device.deviceId.toLowerCase().startsWith('a0:20:a6')); // Another common RLC MAC prefix
+
+      return nameContainsRLC || hasRLCMacPattern;
+    });
+  };
+
+  // Get device display info (MAC address from deviceId and RSSI)
+  const getDeviceDisplayInfo = (device: any) => {
+    const macAddress = device.deviceId || 'Unknown MAC';
+    const rssi = device.rssi || device.RSSI || 'Unknown RSSI';
+    return {macAddress, rssi};
+  };
 
   function provCustom(): void {
     xBlufi.notifySendCustomData({
@@ -231,16 +291,45 @@ const App = () => {
         alignContent: 'center',
       }}>
       <Button title="Scan Devices" onPress={search} />
-      {/* Loop through and display device list */}
-      {devicesList.map((item, index) => {
+
+      {/* RLC Filter Toggle */}
+      <View style={{marginVertical: 10}}>
+        <Button
+          title={showOnlyRLC ? 'Show All Devices' : 'Show Only RLC Devices'}
+          onPress={() => setShowOnlyRLC(!showOnlyRLC)}
+        />
+        <Text
+          style={{
+            color: 'gray',
+            fontSize: 12,
+            textAlign: 'center',
+            marginTop: 5,
+          }}>
+          {showOnlyRLC
+            ? 'Filtering for RLC devices only'
+            : 'Showing all devices'}
+        </Text>
+      </View>
+
+      {/* Loop through and display filtered device list */}
+      {getFilteredDevices().map((item, index) => {
         if (!item?.name) {
           return null;
         }
+        const {macAddress, rssi} = getDeviceDisplayInfo(item);
         return (
-          <View key={item?.deviceId + index}>
-            <Text style={{color: 'black', textAlign: 'left'}}>
-              Device name: {item?.name}
+          <View
+            key={item?.deviceId + index}
+            style={{
+              marginVertical: 5,
+              padding: 10,
+              backgroundColor: '#f5f5f5',
+            }}>
+            <Text style={{color: 'black', fontWeight: 'bold'}}>
+              {item?.name}
             </Text>
+            <Text style={{color: 'gray', fontSize: 12}}>MAC: {macAddress}</Text>
+            <Text style={{color: 'gray', fontSize: 12}}>RSSI: {rssi}</Text>
             <Button title="Connect" onPress={() => connect(item?.deviceId)} />
           </View>
         );
